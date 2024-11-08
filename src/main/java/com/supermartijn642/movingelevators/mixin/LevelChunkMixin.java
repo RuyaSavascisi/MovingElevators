@@ -25,7 +25,7 @@ public class LevelChunkMixin implements MovingElevatorsLevelChunk {
     }
 
     @Redirect(
-        method = "setBlockState(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Z)Lnet/minecraft/world/level/block/state/BlockState;",
+        method = "setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;Z)Lnet/minecraft/block/BlockState;",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/block/BlockState;onRemove(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;Z)V"
@@ -37,7 +37,7 @@ public class LevelChunkMixin implements MovingElevatorsLevelChunk {
     }
 
     @Redirect(
-        method = "setBlockState(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Z)Lnet/minecraft/world/level/block/state/BlockState;",
+        method = "setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;Z)Lnet/minecraft/block/BlockState;",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/block/BlockState;onPlace(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;Z)V"
