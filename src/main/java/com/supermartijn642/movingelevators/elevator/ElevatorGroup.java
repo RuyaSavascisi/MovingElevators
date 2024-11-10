@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -214,7 +215,10 @@ public class ElevatorGroup {
     }
 
     public void remove(ControllerBlockEntity entity){
-        int floor = this.getFloorNumber(entity.getBlockPos().getY());
+        this.removeFloor(this.getFloorNumber(entity.getBlockPos().getY()));
+    }
+
+    private void removeFloor(int floor){
         this.floors.remove(floor);
         this.floorData.remove(floor);
         if(this.floors.isEmpty()){
@@ -688,6 +692,15 @@ public class ElevatorGroup {
     private void syncMovement(){
         if(!this.level.isClientSide)
             MovingElevators.CHANNEL.sendToDimension(this.level.dimension(), new PacketSyncElevatorMovement(this.x, this.z, this.facing, this.currentY, this.speed));
+    }
+
+    public void validateControllersExist(ChunkAccess chunk){
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(this.x, 0, this.z);
+        for(int floor = 0; floor < this.floors.size(); floor++){
+            pos.setY(this.floors.get(floor));
+            if(!(chunk.getBlockEntity(pos) instanceof ControllerBlockEntity))
+                this.removeFloor(floor);
+        }
     }
 
     private static class FloorData {
