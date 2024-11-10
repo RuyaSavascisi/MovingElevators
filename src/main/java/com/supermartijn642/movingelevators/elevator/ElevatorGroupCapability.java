@@ -1,5 +1,7 @@
 package com.supermartijn642.movingelevators.elevator;
 
+import com.google.common.collect.Multimap;
+import com.google.common.collect.MultimapBuilder;
 import com.supermartijn642.movingelevators.MovingElevators;
 import com.supermartijn642.movingelevators.blocks.ControllerBlockEntity;
 import com.supermartijn642.movingelevators.packets.PacketAddElevatorGroup;
@@ -11,7 +13,9 @@ import net.minecraft.nbt.INBT;
 import net.minecraft.util.Direction;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.IChunk;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityInject;
 import net.minecraftforge.common.capabilities.CapabilityManager;
@@ -20,11 +24,13 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,7 +53,7 @@ public class ElevatorGroupCapability {
             public void readNBT(Capability<ElevatorGroupCapability> capability, ElevatorGroupCapability instance, Direction side, INBT nbt){
                 instance.read((CompoundNBT)nbt);
             }
-        }, ElevatorGroupCapability::new);
+        }, () -> null);
     }
 
     public static ElevatorGroupCapability get(World level){
@@ -108,15 +114,19 @@ public class ElevatorGroupCapability {
         );
     }
 
+    @SubscribeEvent
+    public static void onLoadChunk(ChunkEvent.Load e){
+        if(e.getWorld() instanceof World)
+            get((World)e.getWorld()).validateGroupsInChunk(e.getChunk());
+    }
+
     private final World level;
     private final Map<ElevatorGroupPosition,ElevatorGroup> groups = new HashMap<>();
+    @SuppressWarnings("UnstableApiUsage")
+    private final Multimap<ChunkPos,ElevatorGroup> groupsPerChunk = MultimapBuilder.hashKeys().hashSetValues(1).build();
 
     public ElevatorGroupCapability(World level){
         this.level = level;
-    }
-
-    public ElevatorGroupCapability(){
-        this.level = null;
     }
 
     public ElevatorGroup get(int x, int z, Direction facing){
@@ -125,18 +135,17 @@ public class ElevatorGroupCapability {
 
     public void add(ControllerBlockEntity controller){
         ElevatorGroupPosition pos = new ElevatorGroupPosition(controller.getBlockPos(), controller.getFacing());
-        this.groups.putIfAbsent(pos, new ElevatorGroup(this.level, pos.x, pos.z, pos.facing));
-        this.groups.get(pos).add(controller);
+        ElevatorGroup group = this.groups.computeIfAbsent(pos, p -> new ElevatorGroup(this.level, p.x, p.z, p.facing));
+        this.groupsPerChunk.put(pos.chunkPos(), group);
+        group.add(controller);
     }
 
     public void remove(ControllerBlockEntity controller){
         ElevatorGroupPosition pos = new ElevatorGroupPosition(controller.getBlockPos(), controller.getFacing());
         ElevatorGroup group = this.groups.get(pos);
         group.remove(controller);
-        if(group.getFloorCount() == 0){
-            this.groups.remove(pos);
-            MovingElevators.CHANNEL.sendToDimension(this.level.dimension(), new PacketRemoveElevatorGroup(group));
-        }
+        if(group.getFloorCount() == 0)
+            this.removeGroup(pos);
     }
 
     public void tick(){
@@ -149,12 +158,21 @@ public class ElevatorGroupCapability {
             MovingElevators.CHANNEL.sendToDimension(this.level.dimension(), new PacketAddElevatorGroup(this.writeGroup(group)));
     }
 
+    private void removeGroup(ElevatorGroupPosition pos){
+        ElevatorGroup group = this.groups.remove(pos);
+        if(group != null){
+            this.groupsPerChunk.remove(pos.chunkPos(), group);
+            if(!this.level.isClientSide)
+                MovingElevators.CHANNEL.sendToDimension(this.level.dimension(), new PacketRemoveElevatorGroup(group));
+        }
+    }
+
     /**
      * This should only be called client-side from the {@link PacketRemoveElevatorGroup}
      */
     public void removeGroup(int x, int z, Direction facing){
         if(this.level.isClientSide)
-            this.groups.remove(new ElevatorGroupPosition(x, z, facing));
+            this.removeGroup(new ElevatorGroupPosition(x, z, facing));
     }
 
     public ElevatorGroup getGroup(ControllerBlockEntity entity){
@@ -163,6 +181,16 @@ public class ElevatorGroupCapability {
 
     public Collection<ElevatorGroup> getGroups(){
         return this.groups.values();
+    }
+
+    public void validateGroupsInChunk(IChunk chunk){
+        if(!this.groupsPerChunk.containsKey(chunk.getPos()))
+            return;
+        for(ElevatorGroup group : new ArrayList<>(this.groupsPerChunk.get(chunk.getPos()))){ // Groups may be removed during validation, hence create a copy of the list
+            group.validateControllersExist(chunk);
+            if(group.getFloorCount() == 0)
+                this.removeGroup(new ElevatorGroupPosition(group.x, group.z, group.facing));
+        }
     }
 
     public CompoundNBT write(){
@@ -178,15 +206,8 @@ public class ElevatorGroupCapability {
 
     public void read(CompoundNBT compound){
         this.groups.clear();
-        for(String key : compound.getAllKeys()){
-            CompoundNBT groupTag = compound.getCompound(key);
-            if(groupTag.contains("group") && groupTag.contains("pos")){
-                ElevatorGroupPosition pos = ElevatorGroupPosition.read(groupTag.getCompound("pos"));
-                ElevatorGroup group = new ElevatorGroup(this.level, pos.x, pos.z, pos.facing);
-                group.read(groupTag.getCompound("group"));
-                this.groups.put(pos, group);
-            }
-        }
+        for(String key : compound.getAllKeys())
+            this.readGroup(compound.getCompound(key));
     }
 
     private CompoundNBT writeGroup(ElevatorGroup group){
@@ -202,6 +223,7 @@ public class ElevatorGroupCapability {
             ElevatorGroup group = new ElevatorGroup(this.level, pos.x, pos.z, pos.facing);
             group.read(tag.getCompound("group"));
             this.groups.put(pos, group);
+            this.groupsPerChunk.put(pos.chunkPos(), group);
         }
     }
 
@@ -220,23 +242,27 @@ public class ElevatorGroupCapability {
             this(pos.getX(), pos.getZ(), facing);
         }
 
+        public ChunkPos chunkPos(){
+            return new ChunkPos(this.x >> 4, this.z >> 4);
+        }
+
         @Override
         public boolean equals(Object o){
             if(this == o) return true;
-            if(o == null || getClass() != o.getClass()) return false;
+            if(o == null || this.getClass() != o.getClass()) return false;
 
             ElevatorGroupPosition that = (ElevatorGroupPosition)o;
 
-            if(x != that.x) return false;
-            if(z != that.z) return false;
-            return facing == that.facing;
+            if(this.x != that.x) return false;
+            if(this.z != that.z) return false;
+            return this.facing == that.facing;
         }
 
         @Override
         public int hashCode(){
-            int result = x;
-            result = 31 * result + z;
-            result = 31 * result + (facing != null ? facing.hashCode() : 0);
+            int result = this.x;
+            result = 31 * result + this.z;
+            result = 31 * result + (this.facing != null ? this.facing.hashCode() : 0);
             return result;
         }
 
