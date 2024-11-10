@@ -1,3 +1,6 @@
+### Moving Elevators 1.4.10
+- Elevator systems will now validate saved controller positions when the chunk they are in gets loaded
+
 ### Moving Elevators 1.4.9a
 - Fixed crash on startup
 
