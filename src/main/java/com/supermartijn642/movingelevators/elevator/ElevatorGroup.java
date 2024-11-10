@@ -22,6 +22,7 @@ import net.minecraft.util.math.shapes.IBooleanFunction;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.IChunk;
 import net.minecraftforge.common.util.Constants;
 
 import java.util.*;
@@ -215,7 +216,10 @@ public class ElevatorGroup {
     }
 
     public void remove(ControllerBlockEntity entity){
-        int floor = this.getFloorNumber(entity.getBlockPos().getY());
+        this.removeFloor(this.getFloorNumber(entity.getBlockPos().getY()));
+    }
+
+    private void removeFloor(int floor){
         this.floors.remove(floor);
         this.floorData.remove(floor);
         if(this.floors.isEmpty()){
@@ -691,6 +695,15 @@ public class ElevatorGroup {
     private void syncMovement(){
         if(!this.level.isClientSide)
             MovingElevators.CHANNEL.sendToDimension(this.level, new PacketSyncElevatorMovement(this.x, this.z, this.facing, this.currentY, this.speed));
+    }
+
+    public void validateControllersExist(IChunk chunk){
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(this.x, 0, this.z);
+        for(int floor = 0; floor < this.floors.size(); floor++){
+            pos.setY(this.floors.get(floor));
+            if(!(chunk.getBlockEntity(pos) instanceof ControllerBlockEntity))
+                this.removeFloor(floor);
+        }
     }
 
     private static class FloorData {
