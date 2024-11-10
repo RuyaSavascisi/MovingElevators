@@ -20,6 +20,7 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.util.Constants;
 
 import java.util.*;
@@ -213,7 +214,10 @@ public class ElevatorGroup {
     }
 
     public void remove(ControllerBlockEntity entity){
-        int floor = this.getFloorNumber(entity.getPos().getY());
+        this.removeFloor(this.getFloorNumber(entity.getPos().getY()));
+    }
+
+    private void removeFloor(int floor){
         this.floors.remove(floor);
         this.floorData.remove(floor);
         if(this.floors.isEmpty()){
@@ -693,6 +697,15 @@ public class ElevatorGroup {
     private void syncMovement(){
         if(!this.level.isRemote)
             MovingElevators.CHANNEL.sendToDimension(this.level, new PacketSyncElevatorMovement(this.x, this.z, this.facing, this.currentY, this.speed));
+    }
+
+    public void validateControllersExist(Chunk chunk){
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(this.x, 0, this.z);
+        for(int floor = 0; floor < this.floors.size(); floor++){
+            pos.setY(this.floors.get(floor));
+            if(!(chunk.getTileEntity(pos, Chunk.EnumCreateEntityType.CHECK) instanceof ControllerBlockEntity))
+                this.removeFloor(floor);
+        }
     }
 
     private static class FloorData {
