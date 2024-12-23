@@ -4,15 +4,14 @@ import com.supermartijn642.movingelevators.extensions.MovingElevatorsLevelChunk;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Clearable;
 import net.minecraft.world.Containers;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -64,16 +63,11 @@ public class ElevatorCage {
                         entities[x][y][z] = tag;
                         // Create an item to drop in case the block can't be placed back
                         ItemStack stack = new ItemStack(states[x][y][z].getBlock());
-                        entity.saveToItem(stack, level.registryAccess());
-                        CustomData customData = stack.get(DataComponents.BLOCK_ENTITY_DATA);
-                        if(customData != null){
-                            customData = customData.update(data -> {
-                                data.remove("x");
-                                data.remove("y");
-                                data.remove("z");
-                            });
-                            stack.set(DataComponents.BLOCK_ENTITY_DATA, customData);
-                        }
+                        CompoundTag entityItemData = entity.saveCustomOnly(level.registryAccess());
+                        //noinspection deprecation
+                        entity.removeComponentsFromTag(entityItemData);
+                        BlockItem.setBlockEntityData(stack, entity.getType(), entityItemData);
+                        stack.applyComponents(entity.collectComponents());
                         entityItemStacks[x][y][z] = stack.save(level.registryAccess());
                     }
                 }

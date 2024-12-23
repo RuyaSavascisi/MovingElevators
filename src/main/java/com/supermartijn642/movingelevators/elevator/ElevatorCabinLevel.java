@@ -10,6 +10,7 @@ import net.minecraft.util.AbortableIterationConsumer;
 import net.minecraft.world.TickRateManager;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.boss.EnderDragonPart;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.item.alchemy.PotionBrewing;
@@ -36,6 +37,7 @@ import net.minecraft.world.ticks.LevelTickAccess;
 import net.minecraft.world.ticks.ScheduledTick;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -114,6 +116,11 @@ public class ElevatorCabinLevel extends Level {
     @Override
     public Entity getEntity(int entityId){
         return null;
+    }
+
+    @Override
+    public Collection<EnderDragonPart> dragonParts(){
+        return List.of();
     }
 
     @Nullable
