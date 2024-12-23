@@ -34,8 +34,10 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.Scoreboard;
 import net.minecraft.world.ticks.LevelTickAccess;
 import net.minecraft.world.ticks.ScheduledTick;
+import net.neoforged.neoforge.entity.PartEntity;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -114,6 +116,11 @@ public class ElevatorCabinLevel extends Level {
     @Override
     public Entity getEntity(int entityId){
         return null;
+    }
+
+    @Override
+    public Collection<PartEntity<?>> dragonParts(){
+        return List.of();
     }
 
     @Nullable

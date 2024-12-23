@@ -111,6 +111,7 @@ public class MovingElevators {
         GeneratorRegistrationHandler handler = GeneratorRegistrationHandler.get("movingelevators");
         handler.addGenerator(MovingElevatorsModelGenerator::new);
         handler.addGenerator(MovingElevatorsBlockStateGenerator::new);
+        handler.addGenerator(MovingElevatorsItemInfoGenerator::new);
         handler.addGenerator(MovingElevatorsLanguageGenerator::new);
         handler.addGenerator(MovingElevatorsLootTableGenerator::new);
         handler.addGenerator(MovingElevatorsRecipeGenerator::new);

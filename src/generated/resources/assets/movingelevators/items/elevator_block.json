@@ -1,0 +1,6 @@
+{
+  "model": {
+    "model": "movingelevators:item/elevator_block",
+    "type": "minecraft:model"
+  }
+}
