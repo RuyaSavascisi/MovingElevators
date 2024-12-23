@@ -2,9 +2,8 @@ package com.supermartijn642.movingelevators.model;
 
 import com.supermartijn642.core.ClientUtils;
 import com.supermartijn642.movingelevators.blocks.CamoBlockEntity;
+import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
 import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
-import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
-import net.minecraft.client.renderer.block.model.BakedOverrides;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -12,13 +11,13 @@ import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
@@ -38,7 +37,7 @@ public class CamoBakedModel implements BakedModel, FabricBakedModel {
     }
 
     @Override
-    public void emitBlockQuads(BlockAndTintGetter blockView, BlockState state, BlockPos pos, Supplier<RandomSource> randomSupplier, RenderContext context){
+    public void emitBlockQuads(QuadEmitter emitter, BlockAndTintGetter blockView, BlockState state, BlockPos pos, Supplier<RandomSource> randomSupplier, Predicate<@Nullable Direction> cullTest){
         BlockState camoState = null;
 
         // This is stupid, but oh well ¯\(o_o)/¯
@@ -49,16 +48,16 @@ public class CamoBakedModel implements BakedModel, FabricBakedModel {
         }
 
         if(camoState == null)
-            this.originalModel.emitBlockQuads(blockView, state, pos, randomSupplier, context);
+            this.originalModel.emitBlockQuads(emitter, blockView, state, pos, randomSupplier, cullTest);
         else{
             BakedModel model = ClientUtils.getBlockRenderer().getBlockModel(camoState);
-            model.emitBlockQuads(blockView, camoState, pos, randomSupplier, context);
+            model.emitBlockQuads(emitter, blockView, state, pos, randomSupplier, cullTest);
         }
     }
 
     @Override
-    public void emitItemQuads(ItemStack stack, Supplier<RandomSource> randomSupplier, RenderContext context){
-        this.originalModel.emitItemQuads(stack, randomSupplier, context);
+    public void emitItemQuads(QuadEmitter emitter, Supplier<RandomSource> randomSupplier){
+        this.originalModel.emitItemQuads(emitter, randomSupplier);
     }
 
     @Override
@@ -82,18 +81,8 @@ public class CamoBakedModel implements BakedModel, FabricBakedModel {
     }
 
     @Override
-    public boolean isCustomRenderer(){
-        return false;
-    }
-
-    @Override
     public TextureAtlasSprite getParticleIcon(){
         return this.originalModel.getParticleIcon();
-    }
-
-    @Override
-    public BakedOverrides overrides(){
-        return BakedOverrides.EMPTY;
     }
 
     @Override
