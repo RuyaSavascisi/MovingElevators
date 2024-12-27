@@ -9,6 +9,7 @@ import com.supermartijn642.movingelevators.blocks.CamoBlockEntity;
 import com.supermartijn642.movingelevators.blocks.DisplayBlockEntityRenderer;
 import com.supermartijn642.movingelevators.blocks.ElevatorInputBlockEntityRenderer;
 import com.supermartijn642.movingelevators.elevator.ElevatorGroupCapability;
+import com.supermartijn642.movingelevators.elevator.ElevatorGroupRenderer;
 import com.supermartijn642.movingelevators.gui.ElevatorScreen;
 import com.supermartijn642.movingelevators.model.CamoBakedModel;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -32,6 +33,8 @@ public class MovingElevatorsClient {
     public static TextureAtlasSprite OVERLAY_SPRITE;
 
     public static void register(){
+        ElevatorGroupRenderer.registerEventListeners();
+
         ClientRegistrationHandler handler = ClientRegistrationHandler.get("movingelevators");
         // Renderers
         handler.registerCustomBlockEntityRenderer(() -> MovingElevators.elevator_tile, ElevatorInputBlockEntityRenderer::new);
