@@ -12,7 +12,6 @@ import com.supermartijn642.core.registry.RegistrationHandler;
 import com.supermartijn642.core.registry.RegistryEntryAcceptor;
 import com.supermartijn642.movingelevators.blocks.*;
 import com.supermartijn642.movingelevators.elevator.ElevatorGroupCapability;
-import com.supermartijn642.movingelevators.elevator.ElevatorGroupRenderer;
 import com.supermartijn642.movingelevators.generators.*;
 import com.supermartijn642.movingelevators.packets.*;
 import net.fabricmc.api.ModInitializer;
@@ -76,7 +75,6 @@ public class MovingElevators implements ModInitializer {
         MovingElevatorsConfig.init();
 
         ElevatorGroupCapability.registerEventListeners();
-        ElevatorGroupRenderer.registerEventListeners();
 
         register();
         registerGenerators();
