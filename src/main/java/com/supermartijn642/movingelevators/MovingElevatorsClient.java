@@ -8,6 +8,7 @@ import com.supermartijn642.core.render.TextureAtlases;
 import com.supermartijn642.movingelevators.blocks.CamoBlockEntity;
 import com.supermartijn642.movingelevators.blocks.DisplayBlockEntityRenderer;
 import com.supermartijn642.movingelevators.blocks.ElevatorInputBlockEntityRenderer;
+import com.supermartijn642.movingelevators.elevator.ElevatorGroupRenderer;
 import com.supermartijn642.movingelevators.gui.ElevatorScreen;
 import com.supermartijn642.movingelevators.model.CamoBakedModel;
 import net.fabricmc.api.ClientModInitializer;
@@ -26,6 +27,8 @@ public class MovingElevatorsClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient(){
+        ElevatorGroupRenderer.registerEventListeners();
+
         ClientRegistrationHandler handler = ClientRegistrationHandler.get("movingelevators");
         // Renderers
         handler.registerCustomBlockEntityRenderer(() -> MovingElevators.elevator_tile, ElevatorInputBlockEntityRenderer::new);
